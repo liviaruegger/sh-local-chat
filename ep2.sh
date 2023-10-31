@@ -81,9 +81,9 @@ function reset {
 
 # Comandos disponíveis: create, passwd, login, logout, list, msg, quit
 
-function create { # TEM MAIS DOIS ARGUMENTOS
-    usuario=${arg_1}
-    senha=${arg_2}
+function create {
+    usuario=$(echo $line | cut -d ' ' -f 2)
+    senha=$(echo $line | cut -d ' ' -f 3)
     
     # TODO - implementar
 
@@ -94,9 +94,9 @@ function create { # TEM MAIS DOIS ARGUMENTOS
 }
 
 function passwd {
-    usuario=${arg_1}
-    senha_antiga=${arg_2}
-    senha_nova=${arg_3}
+    usuario=$(echo $line | cut -d ' ' -f 2)
+    senha_antiga=$(echo $line | cut -d ' ' -f 3)
+    senha_nova=$(echo $line | cut -d ' ' -f 4)
 
     # TODO - implementar
 
@@ -108,10 +108,8 @@ function passwd {
 }
 
 function login {
-    usuario=${arg_1}
-    senha=${arg_2}
-
-    # TODO - questão: a senha pode conter espaço?
+    usuario=$(echo $line | cut -d ' ' -f 2)
+    senha=$(echo $line | cut -d ' ' -f 3)
 
     # TODO - implementar
 
@@ -127,13 +125,8 @@ function logout {
 }
 
 function msg {
-    usuario=${arg_1}
-    mensagem="${arg_2}"
-
-    # Caso a mensagem contenha espaço, é preciso juntas as partes
-    if ! [ "$arg_3" = "" ]; then
-        mensagem="${arg_2} ${arg_3}"
-    fi
+    usuario=$(echo $line | cut -d ' ' -f 2)
+    mensagem=$(echo $line | cut -d ' ' -f 3-)
 
     # TODO - implementar
 
@@ -156,9 +149,10 @@ fi
 # Ler comandos do usuário até receber o comando quit
 while [ $encerrar = 0 ]; do
     echo -n "${MODO}> "
-    
-    IFS=" "
-    read COMANDO arg_1 arg_2 arg_3
+
+    read line
+
+    COMANDO=$(echo $line | cut -d ' ' -f 1)
 
     # Executa apenas se COMANDO estiver em COMANDOS_VALIDOS
     if [[ " ${COMANDOS_VALIDOS[@]} " =~ " ${COMANDO} " ]]; then
