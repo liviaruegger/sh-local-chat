@@ -41,34 +41,31 @@ echo "executando modo: ${MODO}"
 msg_telegram "executando modo: ${MODO}"
 
 
-# FUNÇÕES GERAIS ---------------------------------------------------------------
-
-function list {
-    # TODO - implementar
-    echo "mock: executando list"
-}
-
-function quit {
-    # TODO - se for cliente, faz logout caso o user esteja logado
-    # if ["$MODO" = "cliente"]; then
-    #     if ["$logado" = "1"]; then
-    #         # logout
-    #     fi
-    # fi
-
-    msg_telegram "encerrando ${MODO}"
-
-    encerrar=1
-}
-
-
 # IMPLEMENTAÇÃO DO SERVIDOR ----------------------------------------------------
+
+# Inicializar o servidor
+
+if [ "$MODO" = "servidor" ]; then
+    CONTADOR_DE_TEMPO=0
+    TEMPO_FILE=$(mktemp /tmp/tempo.XXXXXX)
+
+    # Loop para contar o tempo desde que o servidor foi iniciado
+    while [ 1 ]; do
+        sleep 1
+        ((CONTADOR_DE_TEMPO++))
+        echo $CONTADOR_DE_TEMPO > $TEMPO_FILE
+    done &
+
+    TEMPO_BG=$!
+
+    # Inicializar o arquivo de usuários logados
+    echo "" > /tmp/usuarios_logados
+fi
 
 # Comandos disponíveis: list, time, reset, quit
 
 function time {
-    # TODO - implementar
-    echo "mock: executando time"
+    cat $TEMPO_FILE
 }
 
 function reset {
@@ -137,6 +134,30 @@ function msg {
 }
 
 
+# FUNÇÕES GERAIS ---------------------------------------------------------------
+
+function list {
+    if ! [ "$(cat /tmp/usuarios_logados)" = "" ]; then
+        cat /tmp/usuarios_logados
+    fi
+}
+
+function quit {
+    # TODO - se for cliente, faz logout caso o user esteja logado
+    # if ["$MODO" = "cliente"]; then
+    #     if ["$logado" = "1"]; then
+    #         # logout
+    #     fi
+    # fi
+
+    msg_telegram "encerrando ${MODO}"
+
+    kill -15 ${TEMPO_BG}
+
+    encerrar=1
+}
+
+
 # RECEBER E EXECUTAR COMANDOS --------------------------------------------------
 
 # Define quais são os comandos válidos de acordo com o modo
@@ -155,8 +176,7 @@ while [ $encerrar = 0 ]; do
     COMANDO=$(echo $line | cut -d ' ' -f 1)
 
     # Executa apenas se COMANDO estiver em COMANDOS_VALIDOS
-    if [[ " ${COMANDOS_VALIDOS[@]} " =~ " ${COMANDO} " ]]; then
-        echo "comando válido"
+    if [[ "${COMANDOS_VALIDOS[@]}" =~ "${COMANDO}" ]]; then
         $COMANDO  # executa comando
     else
         echo "ERRO: comando inválido"
