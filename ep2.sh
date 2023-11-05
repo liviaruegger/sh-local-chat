@@ -12,11 +12,12 @@ CHAT_ID="1746769700"
 URL="https://api.telegram.org/bot${TOKEN}/sendMessage?chat_id=${CHAT_ID}"
 
 
-# VARIÁVEIS GLOBAIS ------------------------------------------------------------
+# CONSTANTES E VARIÁVEIS GLOBAIS -----------------------------------------------
 
-logado=0
-usuario=""
-encerrar=0
+QUEBRA_DE_LINHA=$'\n'
+
+USUARIO_ATUAL=""
+ENCERRAR=0
 
 
 # FUNÇÕES AUXILIARES -----------------------------------------------------------
@@ -58,8 +59,18 @@ if [ "$MODO" = "servidor" ]; then
 
     TEMPO_BG=$!
 
-    # Inicializar o arquivo de usuários logados
-    echo "" > /tmp/usuarios_logados
+    # Inicializar diretorio para arquivos de usuários
+    USUARIOS=$(mktemp -d  /tmp/usuarios-XXXXXX)
+    echo "" > ${USUARIOS}/usuarios_logados
+
+    # Enviar a lista de usuários para o Telegram a cada 60 segundos
+    HEADER="Lista de usuários conectados:${QUEBRA_DE_LINHA}"
+    while [ 1 ]; do
+        msg_telegram "${HEADER}$(cat ${USUARIOS}/usuarios_logados)"
+        sleep 60
+    done &
+
+    LISTAR_BG=$!
 fi
 
 # Comandos disponíveis: list, time, reset, quit
@@ -69,8 +80,11 @@ function time {
 }
 
 function reset {
-    # TODO - implementar
-    echo "mock: executando reset"
+    rm -r $USUARIOS
+
+    # Inicializar novo diretorio para arquivos de usuários
+    USUARIOS=$(mktemp -d  /tmp/usuarios-XXXXXX)
+    echo "" > ${USUARIOS}/usuarios_logados
 }
 
 
@@ -137,24 +151,29 @@ function msg {
 # FUNÇÕES GERAIS ---------------------------------------------------------------
 
 function list {
-    if ! [ "$(cat /tmp/usuarios_logados)" = "" ]; then
-        cat /tmp/usuarios_logados
+    if ! [ "$(cat ${USUARIOS}/usuarios_logados)" = "" ]; then
+        cat "${USUARIOS}/usuarios_logados"
     fi
 }
 
 function quit {
-    # TODO - se for cliente, faz logout caso o user esteja logado
-    # if ["$MODO" = "cliente"]; then
-    #     if ["$logado" = "1"]; then
-    #         # logout
-    #     fi
-    # fi
+    if [ "$MODO" = "cliente" ]; then
+        if ! [ "$USUARIO_ATUAL" = "" ]; then
+            logout
+        fi
+    else
+        # Matar processos em background
+        kill -15 ${TEMPO_BG}
+        kill -15 ${LISTAR_BG}
 
-    msg_telegram "encerrando ${MODO}"
+        # Remover arquivos temporários
+        rm -r $USUARIOS
+        rm $TEMPO_FILE
+    fi
 
-    kill -15 ${TEMPO_BG}
+    msg_telegram "encerrando ${MODO}${QUEBRA_DE_LINHA}$(date)"
 
-    encerrar=1
+    ENCERRAR=1
 }
 
 
@@ -168,16 +187,16 @@ else
 fi
 
 # Ler comandos do usuário até receber o comando quit
-while [ $encerrar = 0 ]; do
+while [ $ENCERRAR = 0 ]; do
     echo -n "${MODO}> "
 
     read line
 
-    COMANDO=$(echo $line | cut -d ' ' -f 1)
+    comando=$(echo $line | cut -d ' ' -f 1)
 
-    # Executa apenas se COMANDO estiver em COMANDOS_VALIDOS
-    if [[ "${COMANDOS_VALIDOS[@]}" =~ "${COMANDO}" ]]; then
-        $COMANDO  # executa comando
+    # Executa apenas se o comando digitado estiver em COMANDOS_VALIDOS
+    if [[ "${COMANDOS_VALIDOS[@]}" =~ "${comando}" ]]; then
+        $comando
     else
         echo "ERRO: comando inválido"
     fi
