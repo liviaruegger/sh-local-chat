@@ -14,7 +14,11 @@ URL="https://api.telegram.org/bot${TOKEN}/sendMessage?chat_id=${CHAT_ID}"
 
 # CONSTANTES E VARIÁVEIS GLOBAIS -----------------------------------------------
 
-QUEBRA_DE_LINHA=$'\n'
+NEWLINE=$'\n'
+
+DIRETORIO="/tmp/arquivos_servidor"
+CADASTRO="${DIRETORIO}/usuarios_cadastrados"
+LOGADOS="${DIRETORIO}/usuarios_logados"
 
 USUARIO_ATUAL=""
 ENCERRAR=0
@@ -32,14 +36,10 @@ function msg_telegram {
 MODO=$1
 
 # Checar se o argumento é válido
-if ! [ "$MODO" = "servidor" ] && ! [ "$MODO" = "cliente" ]; then
+if [ "$MODO" != "servidor" ] && [ "$MODO" != "cliente" ]; then
     echo "ERRO: argumento '${MODO}' é inválido; utilize 'servidor' ou 'cliente'"
     exit 1
 fi
-
-# Testando
-echo "executando modo: ${MODO}"
-msg_telegram "executando modo: ${MODO}"
 
 
 # IMPLEMENTAÇÃO DO SERVIDOR ----------------------------------------------------
@@ -47,26 +47,28 @@ msg_telegram "executando modo: ${MODO}"
 # Inicializar o servidor
 
 if [ "$MODO" = "servidor" ]; then
+    msg_telegram "SERVIDOR INICIADO EM:${NEWLINE}$(date)"
+
     CONTADOR_DE_TEMPO=0
-    TEMPO_FILE=$(mktemp /tmp/tempo.XXXXXX)
+    TEMPO=$(mktemp /tmp/tempo.XXXXXX)
 
     # Loop para contar o tempo desde que o servidor foi iniciado
     while [ 1 ]; do
         sleep 1
         ((CONTADOR_DE_TEMPO++))
-        echo $CONTADOR_DE_TEMPO > $TEMPO_FILE
+        echo $CONTADOR_DE_TEMPO > $TEMPO
     done &
 
     TEMPO_BG=$!
 
     # Inicializar diretorio para arquivos de usuários
-    USUARIOS=$(mktemp -d  /tmp/usuarios-XXXXXX)
-    echo "" > ${USUARIOS}/usuarios_logados
+    mkdir $DIRETORIO
+    touch $CADASTRO
+    touch $LOGADOS
 
     # Enviar a lista de usuários para o Telegram a cada 60 segundos
-    HEADER="Lista de usuários conectados:${QUEBRA_DE_LINHA}"
     while [ 1 ]; do
-        msg_telegram "${HEADER}$(cat ${USUARIOS}/usuarios_logados)"
+        msg_telegram "USUÁRIOS CONECTADOS:${NEWLINE}$(cat $LOGADOS)"
         sleep 60
     done &
 
@@ -76,15 +78,16 @@ fi
 # Comandos disponíveis: list, time, reset, quit
 
 function time {
-    cat $TEMPO_FILE
+    cat $TEMPO
 }
 
 function reset {
-    rm -r $USUARIOS
+    rm -r $DIRETORIO
 
     # Inicializar novo diretorio para arquivos de usuários
-    USUARIOS=$(mktemp -d  /tmp/usuarios-XXXXXX)
-    echo "" > ${USUARIOS}/usuarios_logados
+    mkdir $DIRETORIO
+    touch $CADASTRO
+    touch $LOGADOS
 }
 
 
@@ -95,13 +98,14 @@ function reset {
 function create {
     usuario=$(echo $line | cut -d ' ' -f 2)
     senha=$(echo $line | cut -d ' ' -f 3)
-    
-    # TODO - implementar
 
-    # MOCK
-    echo "mock: executando create"
-    echo "usuario: ${usuario}"
-    echo "senha: ${senha}"
+    cadastrado=$(grep "^${usuario} " $CADASTRO)
+
+    if [ "$cadastrado" = "" ]; then
+        echo "${usuario} ${senha}" >> $CADASTRO
+    else
+        echo "ERRO: usuário já cadastrado"
+    fi
 }
 
 function passwd {
@@ -109,50 +113,87 @@ function passwd {
     senha_antiga=$(echo $line | cut -d ' ' -f 3)
     senha_nova=$(echo $line | cut -d ' ' -f 4)
 
-    # TODO - implementar
-
-    # MOCK
-    echo "mock: executando passwd"
-    echo "usuario: ${usuario}"
-    echo "senha_antiga: ${senha_antiga}"
-    echo "senha_nova: ${senha_nova}"
+    cadastrado=$(grep "^${usuario} " $CADASTRO)
+    
+    if [ "$cadastrado" = "" ]; then
+        echo "ERRO: usuário não cadastrado"
+    elif [ "$senha_antiga" != "$(echo $cadastrado | cut -d ' ' -f 2)" ]; then
+        echo "ERRO: senha incorreta"
+    else
+        # Substitui a senha antiga pela nova no arquivo de usuários cadastrados
+        sed -i "s/^${usuario} .*/${usuario} ${senha_nova}/" $CADASTRO
+    fi
 }
 
 function login {
     usuario=$(echo $line | cut -d ' ' -f 2)
     senha=$(echo $line | cut -d ' ' -f 3)
 
-    # TODO - implementar
+    cadastrado=$(grep "^${usuario} " $CADASTRO)
+    logado=$(grep -x $usuario $LOGADOS)
 
-    # MOCK
-    echo "mock: executando login"
-    echo "usuario: ${usuario}"
-    echo "senha: ${senha}"
+    if [ "$USUARIO_ATUAL" != "" ]; then
+        echo "ERRO: você já está logado como ${USUARIO_ATUAL}"
+    elif [ "$cadastrado" = "" ]; then
+        echo "ERRO: usuário não cadastrado"
+    elif [ "$logado" != "" ]; then
+        echo "ERRO: usuário já está logado"
+    elif [ "$senha" != "$(echo $cadastrado | cut -d ' ' -f 2)" ]; then
+        echo "ERRO: senha incorreta"
+        msg_telegram "<${usuario}> errou a senha em:${NEWLINE}$(date)"
+    else
+        echo $usuario >> $LOGADOS
+        USUARIO_ATUAL=$usuario
+
+        msg_telegram "<${usuario}> logou com sucesso em:${NEWLINE}$(date)"
+
+        # Criar named pipe para receber mensagens
+        mkfifo $DIRETORIO/$USUARIO_ATUAL
+        cat $DIRETORIO/$USUARIO_ATUAL &
+        CHAT_BG=$!
+    fi
 }
 
 function logout {
-    # TODO - implementar
-    echo "mock: executando logout"
+    if [ "$USUARIO_ATUAL" != "" ]; then
+        # TODO - no quit do cliente, reclama que o processo $CHAT_BG não existe
+        # kill -15 $CHAT_BG  # encerra o processo do chat
+        rm $DIRETORIO/$USUARIO_ATUAL  # remove o named pipe
+
+        # Deleta a linha com o usuário atual do arquivo de usuários logados
+        sed -i "/^${USUARIO_ATUAL}\$/d" $LOGADOS
+
+        msg_telegram "<${USUARIO_ATUAL}> fez logout em:${NEWLINE}$(date)"
+        
+        USUARIO_ATUAL=""
+    else
+        echo "ERRO: você não está logado"
+    fi
 }
 
+# TODO - esta implementação funciona apenas parcialmente, pois entrega apenas
+# a primeira mensagem, depois nao funciona mais
 function msg {
-    usuario=$(echo $line | cut -d ' ' -f 2)
-    mensagem=$(echo $line | cut -d ' ' -f 3-)
+    if [ "$USUARIO_ATUAL" != "" ]; then
+        usuario=$(echo $line | cut -d ' ' -f 2)
+        mensagem=$(echo $line | cut -d ' ' -f 3-)
 
-    # TODO - implementar
-
-    # MOCK
-    echo "mock: executando msg"
-    echo "usuario: ${usuario}"
-    echo "mensagem: ${mensagem}"
+        echo "[Mensagem de ${USUARIO_ATUAL}]: ${mensagem}" > $DIRETORIO/$usuario
+        # TODO - preciso mostrar o prompt "cliente>" no terminal do cliente
+        # echo -n "${MODO}> " > $DIRETORIO/$usuario
+    else
+        echo "ERRO: você não está logado"
+    fi
 }
 
 
 # FUNÇÕES GERAIS ---------------------------------------------------------------
 
 function list {
-    if ! [ "$(cat ${USUARIOS}/usuarios_logados)" = "" ]; then
-        cat "${USUARIOS}/usuarios_logados"
+    if [ "$MODO" = "cliente" ] && [ "$USUARIO_ATUAL" = "" ]; then
+        echo "ERRO: você não está logado"
+    else
+        cat $LOGADOS
     fi
 }
 
@@ -166,12 +207,12 @@ function quit {
         kill -15 ${TEMPO_BG}
         kill -15 ${LISTAR_BG}
 
-        # Remover arquivos temporários
-        rm -r $USUARIOS
-        rm $TEMPO_FILE
-    fi
+        # Remover arquivos
+        rm -r $DIRETORIO
+        rm $TEMPO
 
-    msg_telegram "encerrando ${MODO}${QUEBRA_DE_LINHA}$(date)"
+        msg_telegram "SERVIDOR ENCERRADO EM:${NEWLINE}$(date)"
+    fi
 
     ENCERRAR=1
 }
@@ -195,7 +236,7 @@ while [ $ENCERRAR = 0 ]; do
     comando=$(echo $line | cut -d ' ' -f 1)
 
     # Executa apenas se o comando digitado estiver em COMANDOS_VALIDOS
-    if [[ "${COMANDOS_VALIDOS[@]}" =~ "${comando}" ]]; then
+    if [[ " ${COMANDOS_VALIDOS[@]} " =~ " ${comando} " ]]; then
         $comando
     else
         echo "ERRO: comando inválido"
