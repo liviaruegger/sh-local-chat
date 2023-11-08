@@ -149,15 +149,16 @@ function login {
 
         # Criar named pipe para receber mensagens
         mkfifo $DIRETORIO/$USUARIO_ATUAL
-        cat $DIRETORIO/$USUARIO_ATUAL &
+        while [ 1 ]; do
+            cat $DIRETORIO/$USUARIO_ATUAL
+        done &
         CHAT_BG=$!
     fi
 }
 
 function logout {
     if [ "$USUARIO_ATUAL" != "" ]; then
-        # TODO - no quit do cliente, reclama que o processo $CHAT_BG não existe
-        # kill -15 $CHAT_BG  # encerra o processo do chat
+        kill -15 $CHAT_BG  # encerra o processo do chat
         rm $DIRETORIO/$USUARIO_ATUAL  # remove o named pipe
 
         # Deleta a linha com o usuário atual do arquivo de usuários logados
@@ -171,18 +172,22 @@ function logout {
     fi
 }
 
-# TODO - esta implementação funciona apenas parcialmente, pois entrega apenas
-# a primeira mensagem, depois nao funciona mais
 function msg {
-    if [ "$USUARIO_ATUAL" != "" ]; then
-        usuario=$(echo $line | cut -d ' ' -f 2)
-        mensagem=$(echo $line | cut -d ' ' -f 3-)
-
-        echo "[Mensagem de ${USUARIO_ATUAL}]: ${mensagem}" > $DIRETORIO/$usuario
-        # TODO - preciso mostrar o prompt "cliente>" no terminal do cliente
-        # echo -n "${MODO}> " > $DIRETORIO/$usuario
-    else
+    if [ "$USUARIO_ATUAL" = "" ]; then
         echo "ERRO: você não está logado"
+        return
+    fi
+
+    usuario=$(echo $line | cut -d ' ' -f 2)
+    mensagem=$(echo $line | cut -d ' ' -f 3-)
+
+    if [ "$usuario" = "$USUARIO_ATUAL" ]; then
+        echo "ERRO: você não pode mandar mensagem para si mesmo"
+    elif [ "$(grep -x $usuario $LOGADOS)" = "" ]; then
+        echo "ERRO: usuário ${usuario} não está logado"
+    else
+        echo "[Mensagem de ${USUARIO_ATUAL}]: ${mensagem}" > $DIRETORIO/$usuario
+        echo -n "${MODO}> " > $DIRETORIO/$usuario
     fi
 }
 
