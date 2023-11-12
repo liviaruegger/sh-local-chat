@@ -14,8 +14,10 @@ ana.saldanha@usp.br
 
 Este projeto, realizado como Exercício Programa para a disciplina MAC0216 do
 IME-USP, consiste em um sistema de chat que permite a comunicação local de
-usuários logados no mesmo computador. O sistema é composto por um servidor e
-um cliente (que pode ser invocado por diversos usuários).
+usuários logados no mesmo computador. O sistema apresenta um modo servidor -
+que deve ser invocado uma vez para iniciar o sistema - e um modo cliente - que
+pode ser invocado em diversos terminais, permitindo o uso simultâneo por
+vários usuários.
 
 Além do sistema de chat cliente/servidor, o script ep2.sh também implementa
 funcionalidades para monitoramento do sistema, enviando alertas via bot do
@@ -32,8 +34,8 @@ O servidor de chat deve ser iniciado antes de qualquer cliente. Para executar
 o servidor, basta invocá-lo uma única vez, no shell, da seguinte forma:
 $   ./ep2.sh servidor
 
-Quanto ao(s) cliente(s), cada usuário que deseje usar o sistema de chat deverá
-invocar o script em modo cliente através do comando:
+Quanto ao(s) cliente(s), para cada terminal em que se deseje usar o sistema de
+chat, deve-se invocar o script em modo cliente através do comando:
 $   ./ep2.sh cliente
 
 As instruções acima consideram que o script já está com permissão de execução
@@ -76,6 +78,31 @@ e está localizado no diretório local.
 > quit                          -   Encerra a execução do cliente. Caso o
                                     usuário não tenha feito logout, faz logout
                                     antes de encerrar.
+
+
+=== TESTES ===
+
+Este programa foi testado em sistema operacional Linux da seguinte maneira:
+
+Um servidor foi iniciado em um terminal; em outros quatro terminais, o script
+foi invocado em modo cliente. Após o cadastro de diversos usuários e login de
+quatro deles, foi testada a troca de mensagens entre as combinações possíveis
+de usuários, assim como a execução de todos os outros comandos disponíveis,
+listados acima.
+
+Também foram testadas situações nas quais se espera uma mensagem de erro:
+cadastro de usuário com mesmo nome, tentativa de login com senha incorreta,
+login de usuário não cadastrado, login com usuário já logado, execução de
+comandos que exigem login sem que o usuário esteja logado. Todos esses erros
+são devidamente tratados e informados.
+
+Apenas um servidor foi invocado por vez, não sendo esperada a execução de mais
+de um servidor simultaneamente. Além disso, foi testado que, após encerramento
+do servidor, todas as informações da sessão serão apagadas, desde que isso
+seja realizado corretamente através do comando quit.
+
+O monitoramento via telegram também foi acompanhado durante a realização dos
+testes.
 
 
 === DEPENDÊNCIAS ===
