@@ -42,6 +42,10 @@ As instruções acima consideram que o script já está com permissão de execu�
 e está localizado no diretório local.
 
 
+=== TESTES ===
+
+Durante a execução, o sistema de chat disponibiliza os seguintes comandos:
+
 --- COMANDOS DO SERVIDOR ---
 
 > list  -   Lista os nomes de todos os usuários logados.
@@ -53,7 +57,6 @@ e está localizado no diretório local.
             execução atual do servidor.
 
 > quit  -   Finaliza o servidor.
-
 
 --- COMANDOS DO CLIENTE --- 
 
@@ -79,30 +82,28 @@ e está localizado no diretório local.
                                     usuário não tenha feito logout, faz logout
                                     antes de encerrar.
 
+O programa pode ser testado em sistema operacional Linux da seguinte maneira:
 
-=== TESTES ===
+Um servidor deve ser iniciado em um terminal; em outros terminais, quantos
+forem considerados necessários, o script deve ser invocado em modo cliente.
+Após o cadastro e login de usuários, pode-se realizar a troca de mensagens
+entre usuários logados, assim como a execução de todos os outros comandos
+disponíveis, listados acima.
 
-Este programa foi testado em sistema operacional Linux da seguinte maneira:
-
-Um servidor foi iniciado em um terminal; em outros quatro terminais, o script
-foi invocado em modo cliente. Após o cadastro de diversos usuários e login de
-quatro deles, foi testada a troca de mensagens entre as combinações possíveis
-de usuários, assim como a execução de todos os outros comandos disponíveis,
-listados acima.
-
-Também foram testadas situações nas quais se espera uma mensagem de erro:
+Também podem ser testadas situações nas quais se espera uma mensagem de erro:
 cadastro de usuário com mesmo nome, tentativa de login com senha incorreta,
 login de usuário não cadastrado, login com usuário já logado, execução de
 comandos que exigem login sem que o usuário esteja logado. Todos esses erros
-são devidamente tratados e informados.
+serão devidamente tratados e informados.
 
-Apenas um servidor foi invocado por vez, não sendo esperada a execução de mais
-de um servidor simultaneamente. Além disso, foi testado que, após encerramento
-do servidor, todas as informações da sessão serão apagadas, desde que isso
-seja realizado corretamente através do comando quit.
+Note que apenas um servidor deve ser invocado por vez, não sendo esperada a
+execução de mais de um servidor simultaneamente. Além disso, pode-se observar
+que, após encerramento do servidor, todas as informações da sessão serão
+apagadas, desde que isso seja realizado corretamente através do comando quit.
 
-O monitoramento via telegram também foi acompanhado durante a realização dos
-testes.
+Para testar o monitoramento via Telegram, é necessário que se tenha acesso ao
+bot, que pode ser alterado no início do script, através das variáveis TOKEN
+(referente ao bot) e CHAT_ID (referente ao chat).
 
 
 === DEPENDÊNCIAS ===
