@@ -1,7 +1,112 @@
 #!/bin/bash
 
-
-# TODO - INSERIR CABEÇALHO AQUI
+# ------------------- EP02 -------------------
+# MAC0216 - Técnicas de Programação I - 2s2023
+# --------------------------------------------
+# 
+# === AUTORA ===
+# 
+# Ana Lívia Rüegger Saldanha
+# NUSP: 8586691
+# ana.saldanha@usp.br
+# 
+# === DESCRIÇÃO ===
+# 
+# Este projeto, realizado como Exercício Programa para a disciplina MAC0216 do
+# IME-USP, consiste em um sistema de chat que permite a comunicação local de
+# usuários logados no mesmo computador. O sistema apresenta um modo servidor -
+# que deve ser invocado uma vez para iniciar o sistema - e um modo cliente - que
+# pode ser invocado em diversos terminais, permitindo o uso simultâneo por
+# vários usuários.
+# 
+# Além do sistema de chat cliente/servidor, o script ep2.sh também implementa
+# funcionalidades para monitoramento do sistema, enviando alertas via bot do
+# Telegram.
+# 
+# === COMO EXECUTAR ===
+# 
+# Note que o sistema foi implementado em um unico arquivo ep2.sh, portanto
+# deve-se especificar a execução de servidor ou cliente através de argumentos
+# de linha de comando.
+# 
+# O servidor de chat deve ser iniciado antes de qualquer cliente. Para executar
+# o servidor, basta invocá-lo uma única vez, no shell, da seguinte forma:
+# $   ./ep2.sh servidor
+# 
+# Quanto ao(s) cliente(s), para cada terminal em que se deseje usar o sistema de
+# chat, deve-se invocar o script em modo cliente através do comando:
+# $   ./ep2.sh cliente
+# 
+# As instruções acima consideram que o script já está com permissão de execução
+# e está localizado no diretório local.
+# 
+# === TESTES ===
+# 
+# Durante a execução, o sistema de chat disponibiliza os seguintes comandos:
+# 
+# --- COMANDOS DO SERVIDOR ---
+# 
+# > list  -   Lista os nomes de todos os usuários logados.
+# 
+# > time  -   Informa o intervalo de tempo, em segundos, desde que o servidor
+#             foi iniciado.
+# 
+# > reset -   Remove todos os usuários que foram criados nesta instância de
+#             execução atual do servidor.
+# 
+# > quit  -   Finaliza o servidor.
+# 
+# --- COMANDOS DO CLIENTE --- 
+# 
+# > create usuario senha          -   Cria um novo usuário de nome <usuario> e
+#                                     senha <senha>.
+# 
+# > passwd usuario antiga nova    -   Modifica a senha do usuário <usuario> de
+#                                     <antiga> para <nova>.
+# 
+# > login usuario senha           -   Loga com o usuário de nome <usuario> com
+#                                     a senha <senha>.
+# 
+# > logout                        -   Desloga do sistema, sem encerrar a
+#                                     execução do cliente.
+# 
+# > list                          -   Lista os nomes de todos os usuários
+#                                     logados.
+# 
+# > msg usuario mensagem          -   Escreve na tela do usuário <usuario> a
+#                                     mensagem <mensagem>.
+# 
+# > quit                          -   Encerra a execução do cliente. Caso o
+#                                     usuário não tenha feito logout, faz logout
+#                                     antes de encerrar.
+# 
+# O programa pode ser testado em sistema operacional Linux da seguinte maneira:
+# 
+# Um servidor deve ser iniciado em um terminal; em outros terminais, quantos
+# forem considerados necessários, o script deve ser invocado em modo cliente.
+# Após o cadastro e login de usuários, pode-se realizar a troca de mensagens
+# entre usuários logados, assim como a execução de todos os outros comandos
+# disponíveis, listados acima.
+# 
+# Também podem ser testadas situações nas quais se espera uma mensagem de erro:
+# cadastro de usuário com mesmo nome, tentativa de login com senha incorreta,
+# login de usuário não cadastrado, login com usuário já logado, execução de
+# comandos que exigem login sem que o usuário esteja logado. Todos esses erros
+# serão devidamente tratados e informados.
+# 
+# Note que apenas um servidor deve ser invocado por vez, não sendo esperada a
+# execução de mais de um servidor simultaneamente. Além disso, pode-se observar
+# que, após encerramento do servidor, todas as informações da sessão serão
+# apagadas, desde que isso seja realizado corretamente através do comando quit.
+# 
+# Para testar o monitoramento via Telegram, é necessário que se tenha acesso ao
+# bot, que pode ser alterado no início do script, através das variáveis TOKEN
+# (referente ao bot) e CHAT_ID (referente ao chat).
+# 
+# === DEPENDÊNCIAS ===
+# 
+# Bash:   GNU bash, version 5.0.17(1)-release (x86_64-pc-linux-gnu)
+# SO:     x86_64 GNU/Linux
 
 
 # INFORMAÇÕES BÁSICAS DO BOT ---------------------------------------------------
